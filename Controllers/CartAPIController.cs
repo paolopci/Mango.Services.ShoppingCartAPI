@@ -17,7 +17,7 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
         private IMapper _mapper;
         private AppDbContext _db;
 
-        public CartAPIController( IMapper mapper, AppDbContext db)
+        public CartAPIController(IMapper mapper, AppDbContext db)
         {
             _response = new ResponseDto();
             _mapper = mapper;
@@ -78,6 +78,34 @@ namespace Mango.Services.ShoppingCartAPI.Controllers
 
             return _response;
 
+        }
+
+        [HttpPost("REmoveCart")]
+        public async Task<ResponseDto> RemoveCart([FromBody] int cartDetailsId)
+        {
+            try
+            {
+                CartDetails cartDetails = _db.CartDetails.First(u => u.CartDetailsId == cartDetailsId);
+
+                int totalCountofCarItem = _db.CartDetails.Count(u => u.CartHeaderId == cartDetails.CartHeaderId);
+                _db.CartDetails.Remove(cartDetails);
+                if (totalCountofCarItem == 1)
+                {
+                    var cartHeaderToRemove =
+                        await _db.CartHeaders.FirstOrDefaultAsync(u => u.CartHeaderId == cartDetails.CartHeaderId);
+                    _db.CartHeaders.Remove(cartHeaderToRemove);
+                }
+
+                await _db.SaveChangesAsync();
+                _response.Result = true;
+
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.Message = ex.Message.ToString();
+            }
+            return _response;
         }
     }
 }
